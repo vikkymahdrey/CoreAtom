@@ -1,0 +1,1326 @@
+<%@page import="Service.PaginationService"%>
+<%@page import="Service.SiteService"%>
+<%@page import="DTO.SiteDto"%>
+<%@page import="java.util.List"%>
+<%@page import="Servlets.subscription.SubscriptionSelector"%>
+<%@page import="DAO.LogTimeDao"%>
+<%@page import="DTO.LogTimeDto"%>
+<%@page import="DTO.SchedulingDto"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="DAO.SchedulingDao"%>
+<%@page import="commons.OtherFunctions"%>
+<%@page import="DAO.OtherDao"%>
+<%@ page contentType="text/html; charset=utf-8" language="java"
+	import="java.sql.*" errorPage="error.jsp"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!-- InstanceBegin template="/Templates/hrmanager_temp.dwt.jsp" codeOutsideHTMLIsLocked="false" -->
+<head>
+
+
+
+
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Schedule Employee</title>
+<link href="css/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="js/jquery-latest.js"></script>
+<style type="text/css">
+@import "css/jquery.datepick.css";
+</style>
+<script type="text/javascript" src="js/jquery.datepick.js"></script>
+<script src="js/dateValidation.js"></script>
+<script type="text/javascript">
+	var employeeCount;
+	$(window).load(function() {
+
+		$("#checkAllEmployees").click(checkOrUncheckEmployees);
+		$("#checkAllLoginTime").click(setAllLoginTimeSame);
+		$("#checkAllLogoutTime").click(setAllLogoutTimeSame);
+		$("#checkAllToDate").click(setAllToDate);
+		$("#checkAllFromDate").click(setAllFromDate);
+		$("#checkAllProject").click(setAllProject);
+		employeeCount = document.getElementById("employeeCount").value;
+		var from_date;//="from_date";
+		var to_date;//="to_date";*/
+		for ( var i = 1; i <= employeeCount; i++) {
+			from_date = "from_date" + i;
+			to_date = "to_date" + i;
+			$("#" + from_date).datepick();
+			$("#" + to_date).datepick();
+		}
+
+		// on time validation functions calling
+
+		/*
+		var element = $( ".checkEmployee:checked").parent().parent().children().children("input");
+		 $(element).click(validateRowOnTime);
+		 */
+		$(".errorImage").hide();
+		$("input[type=text]").change(instentValidation);
+
+		$("select").change(instentValidation);
+
+		$(".checkEmployee").change(makeElementsInTheRowToBeValidated);
+
+	});
+	//---search using site
+	function searchForm() {
+		//alert('hai ');
+		document.siteSearchForm.action = "transadmin_schedule_employee.jsp";
+		document.siteSearchForm.submit();
+		return false;
+	}
+
+	//-------  when the check employee is clicked
+	function makeElementsInTheRowToBeValidated() {
+		try {
+			if ($(this).is(":checked")) {
+				$(this).parent().parent().children().children(".projectdesc")
+						.addClass("validate");
+				$(this).parent().parent().children().children(".toDate")
+						.addClass("validate");
+				$(this).parent().parent().children().children(".fromDate")
+						.addClass("validate");
+				$(this).parent().parent().children().children(".loginTime")
+						.addClass("validate");
+				$(this).parent().parent().children().children(".logoutTime")
+						.addClass("validate");
+			} else {
+
+				$(this).parent().parent().children().children(".projectdesc")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".toDate")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".fromDate")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".loginTime")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".logoutTime")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".logoutTime")
+						.removeClass("validate");
+				$(this).parent().parent().children().children(".errorImage")
+						.hide();
+				$(this).parent().parent().children().children(
+						"input[type=text]").val("");
+				$(this).parent().parent().children().children("select").val("");
+
+			}
+		} catch (e) {
+			alert(e);
+		}
+	}
+
+	//--------------on  4 11 2012 ------------------ starts---
+
+	function setAllFromDate() {
+		try {
+
+			if ($("#checkAllFromDate").is(":checked")) {
+
+				var value = $(".checkEmployee:checked").parent().parent()
+						.children().children(".fromDate").first().val();
+
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".fromDate");
+				element.val(value);
+
+			} else {
+				var oldValue = $(".checkEmployee:checked").parent().parent()
+						.children().children(".fromDate").first().val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".fromDate");
+				element.val("");
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".fromDate").first().val(oldValue);
+
+			}
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function setAllToDate() {
+		try {
+
+			if ($("#checkAllToDate").is(":checked")) {
+
+				var value = $(".checkEmployee:checked").parent().parent()
+						.children().children(".toDate").first().val();
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".toDate").first().val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".toDate");
+				element.val(value);
+
+			} else {
+
+				var oldValue = $(".checkEmployee:checked").parent().parent()
+						.children().children(".toDate").first().val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".toDate");
+				element.val("");
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".toDate").first().val(oldValue);
+			}
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function setAllProject() {
+
+		try {
+
+			if ($("#checkAllProject").is(":checked")) {
+
+				// $(".project").parent().parent().children().children(".checkEmployee:checked").parent().parent().children().children(".project").val(valueId);
+				// $(".projectdesc").parent().parent().children().children(".checkEmployee:checked").parent().parent().children().children(".projectdesc").val(valueDesc);
+
+				var valueDesc = $(".checkEmployee:checked").parent().parent()
+						.children().children(".projectdesc").first().val();
+
+				var valueId = $(".checkEmployee:checked").parent().parent()
+						.children().children(".project").first().val();
+
+				// alert(value1);
+				var element1 = $(".checkEmployee:checked").parent().parent()
+						.children().children(".project");
+				var element2 = $(".checkEmployee:checked").parent().parent()
+						.children().children(".projectdesc");
+				element1.val(valueId);
+				element2.val(valueDesc);
+
+				$(element1).each(function() {
+					copyTimesSpecificToProject(this);
+				});
+
+			} else {
+				var oldProject = $(".checkEmployee:checked").parent().parent()
+						.children().children(".project").first().val();
+
+				var oldProjectDesc = $(".checkEmployee:checked").parent()
+						.parent().children().children(".projectdesc").first()
+						.val();
+
+				var element1 = $(".checkEmployee:checked").parent().parent()
+						.children().children(".project");
+				var element2 = $(".checkEmployee:checked").parent().parent()
+						.children().children(".projectdesc");
+				element1.val("");
+				element2.val("");
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".project").first().val(oldProject);
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".projectdesc").first().val(oldProjectDesc);
+
+			}
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function copyTimesSpecificToProject(element) {
+		try {
+
+			if ($("#checkAllProject").is(":checked")) {
+
+				// $(".project").parent().parent().children().children(".checkEmployee:checked").parent().parent().children().children(".project").val(valueId);
+				// $(".projectdesc").parent().parent().children().children(".checkEmployee:checked").parent().parent().children().children(".projectdesc").val(valueDesc);
+
+				var firstProjectElement = $(".checkEmployee:checked").parent()
+						.parent().children().children(".project");
+				if ($(element).val() == $(firstProjectElement).val()) {
+
+					var firstLoginElement = $(".checkEmployee:checked")
+							.parent().parent().children()
+							.children(".loginTime").first();
+
+					var firstLogoutElement = $(".checkEmployee:checked")
+							.parent().parent().children().children(
+									".logoutTime").first();
+
+					var currentLoginElement = $(".checkEmployee:checked")
+							.parent().parent().children()
+							.children(".loginTime");
+
+					var currentLogoutElement = $(".checkEmployee:checked")
+							.parent().parent().children().children(
+									".logoutTime");
+
+					// alert(value1);
+					$(currentLoginElement).html($(firstLoginElement).html());
+					$(currentLogoutElement).html($(firstLogoutElement).html());
+
+				}
+			}
+
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function setAllLoginTimeSame() {
+		setAllLoginTimeSame_sub();
+	}
+
+	function setAllLogoutTimeSame() {
+		setAllLogoutTimeSame_sub();
+	}
+
+	function setAllLogoutTimeSame_sub() {
+		try {
+
+			if ($("#checkAllLogoutTime").is(":checked")) {
+				var value = $(".checkEmployee:checked").parent().parent()
+						.children().children(".logoutTime ").first().val();
+				//var value = $("#logouttime1 option:selected").val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".logoutTime");
+				element.removeAttr("selected");
+				element.val(value);
+
+				var projectValue = $(".checkEmployee:checked").parent()
+						.parent().children().children(".project ").first()
+						.val();
+				if (value != null && value != "") {
+					element.each(function() {
+						//alert($(this).val());
+						if ($(this).val() == null || $(this).val() == "") {
+							//alert('tick..');
+							var thisProjectValue = $(this).parent().parent()
+									.children().children(".project").val();
+							//	alert(" 1->" +thisProjectValue + " 2->" +projectValue);
+							if (thisProjectValue == projectValue) {
+								$(this).append(
+										"<option selected value='"+value+"'>"
+												+ value + "</option>")
+							}
+						}
+					});
+				}
+
+			} else {
+				var oldValue = $(".checkEmployee:checked").parent().parent()
+						.children().children(".logoutTime ").first().val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".logoutTime");
+				element.removeAttr("selected");
+				element.val("");
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".logoutTime ").first().val(oldValue);
+
+			}
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function setAllLoginTimeSame_sub() {
+		try {
+
+			if ($("#checkAllLoginTime").is(":checked")) {
+
+				var value = $(".checkEmployee:checked").parent().parent()
+						.children().children(".loginTime ").first().val();
+
+				//$(".loginTime option").removeAttr("selected");
+				//$(".loginTime option[value='" + value + "']").attr("selected",
+				//		"selected");
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".loginTime ");
+				element.removeAttr("selected");
+				element.val(value);
+
+				var projectValue = $(".checkEmployee:checked").parent()
+						.parent().children().children(".project ").first()
+						.val();
+				if (value != null && value != "") {
+					element.each(function() {
+						//alert($(this).val());
+						if ($(this).val() == null || $(this).val() == "") {
+							//alert('tick..');
+							var thisProjectValue = $(this).parent().parent()
+									.children().children(".project").val();
+							//	alert(" 1->" +thisProjectValue + " 2->" +projectValue);
+							if (thisProjectValue == projectValue) {
+								$(this).append(
+										"<option selected value='"+value+"'>"
+												+ value + "</option>")
+							}
+						}
+					});
+				}
+
+			} else {
+				var oldValue = $(".checkEmployee:checked").parent().parent()
+						.children().children(".loginTime ").first().val();
+				var element = $(".checkEmployee:checked").parent().parent()
+						.children().children(".loginTime ");
+				element.removeAttr("selected");
+				element.val("");
+				$(".checkEmployee:checked").parent().parent().children()
+						.children(".loginTime ").first().val(oldValue);
+
+			}
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	function checkOrUncheckEmployees() {
+		try {
+			if ($("#checkAllEmployees").is(":checked")) {
+				$(".checkEmployee").attr("checked", "checked");
+
+			} else {
+				$(".checkEmployee").removeAttr("checked");
+
+			}
+
+			$(".checkEmployee").trigger('change');
+
+		} catch (e) {
+			alert(e.message);
+		}
+	}
+
+	//-------------------
+
+	//------------------
+
+	function validateWithSubscriptionEffectiveDates1(row) {
+		var flag = true;
+
+		try {
+			var fromDate = $(row).parent("td").parent("tr").children("td")
+					.children(".fromDate").val();
+			var effectiveDate = $(row).parent("td").parent("tr").children(
+					".td-EffectiveDate").children("input[type=hidden]").val();
+			//alert("fromdate: "+ fromDate + " effective date : "+ effectiveDate);
+			//alert(CompareTwoDatesyyyymmddddmmyyyy(fromDate,effectiveDate));
+			if (CompareTwoDatesyyyymmddddmmyyyy(fromDate, effectiveDate)) {
+				flag = false;
+			}
+		} catch (e) {
+			flag = false;
+			alert(e.message);
+
+		}
+		return flag;
+	}
+
+	// ----------on 26 11 2012-----------validate row on time
+
+	/*	
+	 function validateAllFieldsInTheRow(row)
+	 {
+	 var flag=true;
+	 var cur_date = new Date();
+	
+	 try {
+	
+	 $(".errorImage").hide();
+	 var projectDesc= $(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".projectdesc");
+	 var fromDate= $(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".fromDate");
+	 var toDate= $(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".toDate");
+	 var loginTime= $(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".loginTime");
+	 var logoutTime= $(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".logoutTime");
+	 var scheduledTo=$(row).parent("td").parent("tr").children("td").children(".checkEmployee").parent().parent().children().children(".scheduledTo");
+	
+	 //alert(projectDesc.val() + " " + fromDate.val() + " "+ fromDate.val() + " "+toDate.val() + " " + loginTime.val() + " " + logoutTime.val());
+	
+	 // error images
+	
+	
+	
+	
+	 return flag;
+	
+	
+	 } catch (e) {
+	 alert("Eror" + e);
+	 return false;
+	 }
+	 }
+	 */
+
+	function formValidate() {
+		try {
+			$(".validate").each(function() {
+				$(this).trigger('change');
+			});
+
+		} catch (e) {
+			alert(e);
+		}
+
+	}
+
+	// validation on time
+	function instentValidation() {
+		// alert("val : "+ $(this).val());
+		var flag = true;
+
+		try {
+			if ($(this).hasClass("validate")) {
+				if ($(this).hasClass("projectdesc")) {
+
+					flag = validate_projectDesc($(this));
+
+				}
+
+				if ($(this).hasClass("fromDate")) {
+					var toDate = $(this).parent("td").parent("tr").children(
+							"td").children(".toDate");
+
+					flag = validate_fromDate($(this), $(toDate));
+					if (flag) {
+						var scheduledTo = $(this).parent("td").parent("tr")
+								.children("td").children(".scheduledTo");
+						var scheduledFrom = $(this).parent("td").parent("tr")
+								.children("td").children(".scheduledFrom");
+						flag = validate_fromDateAndtToDate($(this),
+								$(scheduledTo), $(toDate), $(scheduledFrom));
+					}
+				}
+				if ($(this).hasClass("toDate")) {
+					flag = validate_toDate($(this));
+					if (flag) {
+						var scheduledTo = $(this).parent("td").parent("tr")
+								.children("td").children(".scheduledTo");
+						var scheduledFrom = $(this).parent("td").parent("tr")
+								.children("td").children(".scheduledFrom");
+						var fromDate = $(this).parent("td").parent("tr")
+								.children("td").children(".checkEmployee")
+								.parent().parent().children().children(
+										".fromDate");
+						flag = validate_fromDateAndtToDate($(fromDate),
+								$(scheduledTo), $(this), $(scheduledFrom));
+					}
+				}
+				if ($(this).hasClass("loginTime")) {
+					flag = validate_loginTime($(this));
+
+				}
+				if ($(this).hasClass("logoutTime")) {
+					flag = validate_logoutTime($(this));
+				}
+			}
+
+		} catch (e) {
+			flag = false;
+			alert(e);
+		}
+
+	}
+
+	// validate intividuals
+
+	function validate_projectDesc(projectDesc) {
+
+		var flag = true;
+		var projectDesc_img = $(projectDesc).parent("td").children("img");
+
+		if ($(projectDesc).val() == "") {
+			$(projectDesc_img).attr("title", "Please Enter Project");
+
+			$(projectDesc_img).show();
+			$(projectDesc).removeClass("valid");
+			$(projectDesc).addClass("error");
+			flag = false;
+
+		} else {
+			$(projectDesc_img).hide();
+			$(projectDesc).removeClass("error");
+			$(projectDesc).addClass("valid");
+		}
+		return flag;
+	}
+
+	function validate_fromDate(fromDate, toDate) {
+		var flag = true;
+		try {
+			var fromDate_img = $(fromDate).parent("td").children("img");
+			if ($(fromDate).val() == "") {
+				$(fromDate_img).attr("title", "Please Enter from date");
+				$(fromDate_img).show();
+				$(fromDate).addClass("error");
+				$(fromDate).removeClass("valid");
+				flag = false;
+			} else {
+				$(fromDate_img).hide();
+				$(fromDate).addClass("valid");
+				$(fromDate).removeClass("error");
+			}
+		} catch (e) {
+			alert("exception " + e);
+		}
+		return flag;
+	}
+
+	function validate_fromDateAndtToDate(fromDate, scheduledTo, toDate,
+			scheduledFrom) {
+
+		var flag = true;
+		try {
+			flag = validate_fromDate($(fromDate), $(toDate));
+			if (flag == true) {
+				var cur_date = new Date();
+				var today = new Date();
+				var todayevar = today.getDate() + "/" + today.getMonth() + "/"
+						+ today.getFullYear();
+				var current_hour = cur_date.getHours();
+				var next_day = new Date(cur_date
+						.setDate(cur_date.getDate() + 1));
+				var next_dayvar = next_day.getDate() + "/"
+						+ next_day.getMonth() + "/" + next_day.getFullYear();
+				var advFifteen_day = new Date(cur_date.setDate(cur_date
+						.getDate() + 15));
+				var advFifteen_dayvar = advFifteen_day.getDate() + "/"
+						+ advFifteen_day.getMonth() + "/"
+						+ advFifteen_day.getFullYear();
+				var fromDate_img = $(fromDate).parent("td").children("img");
+				var toDate_img = $(toDate).parent("td").children("img");
+				var from_date = $(fromDate).val();
+				var to_date = $(toDate).val();
+
+				var mon1 = parseInt(from_date.substring(3, 5), 10) - 1;
+				var dt1 = parseInt(from_date.substring(0, 2), 10);
+				var yr1 = parseInt(from_date.substring(6, 10), 10);
+				var date1 = new Date(yr1, mon1, dt1);
+
+				var advThirt_day = new Date(date1.setDate(date1.getDate() + 30));
+
+				var advThirt_dayvar = advThirt_day.getDate() + "/"
+						+ advThirt_day.getMonth() + "/"
+						+ advThirt_day.getFullYear();
+				from_date = $(fromDate).val();
+				var scheduled_To = $(scheduledTo).val();
+				var scheduled_From = $(scheduledFrom).val();
+				//alert(from_date+"from date"+scheduled_To);				
+				var subscriptionID = $(fromDate).parent().parent().children()
+						.children(".checkEmployee").val();
+				if (flag == true) {
+					if (CompareTwodiffDates(to_date, from_date)) {
+						$(fromDate_img)
+								.attr("title",
+										"Invalid Date Range!\nFrom Date cannot be after To Date!");
+						$(fromDate_img).show();
+						flag = false;
+						$(fromDate).addClass("error");
+						$(fromDate).removeClass("valid");
+					} else if (validateWithSubscriptionEffectiveDates1($(fromDate)) == true) {
+						$(fromDate_img)
+								.attr("title",
+										"Scheduling from date should be after subscription effective date");
+						flag = false;
+						$(fromDate_img).show();
+						$(fromDate).addClass("error");
+						$(fromDate).removeClass("valid");
+					} else if (CompareTwoDatesddmmyyyy(from_date, todayevar)) {
+						$(fromDate_img)
+								.attr("title",
+										"Invalid Date Range!\n From date Should  be after Today!");
+						$(fromDate_img).show();
+						flag = false;
+						$(fromDate).addClass("error");
+						$(fromDate).removeClass("valid");
+					} /*	else  if (CompareTwoDatesddmmyyyy(from_date,next_dayvar)
+																&& current_hour >= 18) {
+															$(fromDate_img).attr("title","Invalid date. Cut off time is 6 pm to schedule for next day.");
+															  
+															$(fromDate_img).show();
+															flag = false;
+															$(fromDate).addClass("error");
+															$(fromDate).removeClass("valid");
+															} else  if (CompareTwoDatesddmmyyyy(from_date,advFifteen_dayvar)==false) {
+															$(fromDate_img).attr("title","Invalid Date Range!\n From Date cannot be after 15 Days!");
+															 
+															$(fromDate_img).show();
+															flag = false;
+															$(fromDate).addClass("error");
+															$(fromDate).removeClass("valid");
+															
+											New requirement  to avoid this
+															
+										
+														}	*/else if ((to_date != "")
+							&& (CompareTwoDatesddmmyyyy(to_date,
+									advThirt_dayvar) == false)) {
+						$(toDate_img)
+								.attr("title",
+										"Invalid Date Range!\n Date range should be 30 Days!");
+						$(toDate_img).show();
+						flag = false;
+						$(toDate).addClass("error");
+						$(toDate).removeClass("valid");
+					} else {
+						checkDatesAreOutOfExistingSchedules(subscriptionID,
+								from_date, to_date, fromDate, fromDate_img);
+					}
+				}
+
+			}
+		} catch (e) {
+			alert("Error in validate_fromDateToDate " + e);
+		}
+		return flag;
+	}
+
+	// compare the dates blongs  any schedules 
+	function checkDatesAreOutOfExistingSchedules(subscriptionID, fromDateParam,
+			toDateParam, fromDate, fromDate_img) {
+
+		var flag = true;
+
+		try {
+			if (subscriptionID != "" && fromDateParam != ""
+					&& toDateParam != "") {
+
+				var param = "?subscriptionID=" + subscriptionID + "&fromDate="
+						+ fromDateParam + "&toDate=" + toDateParam;
+				//alert(param);
+				$
+						.ajax({
+							type : 'POST',
+							url : 'IsWithinSchedules' + param,
+							success : function(data) {
+								var sss = data.trim();
+								//	alert(sss);
+								if (sss == "true") {
+									//	alert('schedule exists'+flag);	
+									$(fromDate_img)
+											.attr("title",
+													"Duplicate! Schedule exists on the date range");
+									$(fromDate_img).show();
+									flag = false;
+									$(fromDate).addClass("error");
+									$(fromDate).removeClass("valid");
+									flag = false;
+
+								} else {
+									$(fromDate_img).hide();
+									$(fromDate).addClass("valid");
+									$(fromDate).removeClass("error");
+								}
+
+							},
+							error : function(data) {
+								var data = $.parseJSON(data);
+								$.each(data.errors, function(index, value) {
+									//alert(value);
+								});
+								//	 flag=true;
+								alert('error');
+							}
+						//dataType: 'json'
+
+						});
+			}
+		} catch (e) {
+			alert(e);
+		}
+
+		return flag;
+	}
+
+	function validate_toDate(toDate) {
+
+		var flag = true;
+		try {
+			var toDate_img = $(toDate).parent("td").children("img");
+			if ($(toDate).val() == "") {
+				$(toDate_img).attr("title", "Please Enter to date");
+
+				$(toDate_img).show();
+				flag = false;
+
+				$(toDate).addClass("error");
+				$(toDate).removeClass("valid");
+
+			} else {
+				$(toDate_img).hide();
+
+				$(toDate).addClass("valid");
+				$(toDate).removeClass("error");
+			}
+		} catch (e) {
+			alert(e);
+		}
+		return flag;
+	}
+	function validate_loginTime(loginTime) {
+
+		var flag = true;
+		try {
+			var loginTime_img = $(loginTime).parent("td").children(
+					".errorImage");
+
+			if ($(loginTime).val() == "") {
+				$(loginTime_img).attr("title", "Please Select Login Time");
+
+				$(loginTime_img).show();
+
+				flag = false;
+
+				$(loginTime).addClass("error");
+				$(loginTime).removeClass("valid");
+
+			} else {
+				$(loginTime_img).hide();
+
+				$(loginTime).addClass("valid");
+				$(loginTime).removeClass("error");
+			}
+
+		} catch (e) {
+			alert(e);
+		}
+
+		return flag;
+	}
+
+	function validate_logoutTime(logoutTime) {
+		var flag = true;
+		try {
+			var logoutTime_img = $(logoutTime).parent("td").children(
+					".errorImage");
+			//$(logoutTime_img).show();
+			if ($(logoutTime).val() == "") {
+				$(logoutTime_img).attr("title", "Please Select logout");
+
+				$(logoutTime_img).show();
+				flag = false;
+
+				$(logoutTime).addClass("error");
+				$(logoutTime).removeClass("valid");
+			} else {
+				$(logoutTime_img).hide();
+
+				$(logoutTime).addClass("valid");
+				$(logoutTime).removeClass("error");
+			}
+		} catch (e) {
+			alert(e);
+		}
+		return flag;
+	}
+
+	// validate entirform
+	function Validate1() {
+		var flag = true;
+		formValidate();
+		try {
+			if ($(".validate").hasClass("valid")) {
+				if ($(".validate").hasClass("error")) {
+					flag = false;
+				} else {
+					flag = true;
+				}
+
+			} else {
+				if (!$(".checkEmployee").is(":checked")) {
+					alert("Please select atleast one row ");
+				}
+				flag = false;
+			}
+		} catch (e) {
+			alert(e);
+		}
+		return flag;
+
+	}
+
+	//-----------on  4 11 2012 ------------------ ends---
+
+	/*	function Validate() {
+	 try {
+	 var flag = false;
+
+	 var cur_date = new Date();
+	 var current_hour = cur_date.getHours();
+	 var next_day = new Date(cur_date.setDate(cur_date.getDate() + 1));
+	 var advFifteen_day = new Date(cur_date
+	 .setDate(cur_date.getDate() + 15));
+	 cur_date = new Date();
+	 var checkboxflag = false;
+	 for ( var i = 1; i <= employeeCount; i++) {
+	 if ($("input[id=employeecheck" + i + "]").is(":checked")) {
+	 checkboxflag = true;
+	 if ($("input[id=projectdesc" + i + "]").val() == "") {
+	 alert("Please Enter Project");
+	 $("input[id=projectbtn" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if ($("input[id=from_date" + i + "]").val() == "") {
+	 alert("Please Enter from date");
+	 $("input[id=from_date" + i + "]").focus();
+	 flag = false;
+	 break;
+
+	 } else if ($("input[id=to_date" + i + "]").val() == "") {
+	 alert("Please Enter to date");
+	 $("input[id=to_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if ($("select[id=logintime" + i + "]").val() == "") {
+	 alert("Please Select Login Time");
+	 $("select[id=logintime" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if ($("select[id=logouttime" + i + "]").val() == "") {
+	 alert("Please Select logout");
+	 $("select[id=logouttime" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else {
+	 var from_date = $("input[id=from_date" + i + "]").val();
+	 var to_date = $("input[id=to_date" + i + "]").val();
+	 var scheduledTo = $("input[id=scheduledTo" + i + "]")
+	 .val();
+	 var mon1 = parseInt(from_date.substring(0, 2), 10) - 1;
+	 var dt1 = parseInt(from_date.substring(3, 5), 10);
+	 var yr1 = parseInt(from_date.substring(6, 10), 10);
+	 var date1 = new Date(yr1, mon1, dt1);
+	 var advThirt_day = new Date(date1.setDate(date1
+	 .getDate() + 30));
+	 from_date = $("input[id=from_date" + i + "]").val();
+	 if (scheduledTo != "null") {
+	 // alert("DATE"+Date.parse(from_date)+"TO"+Date.parse(scheduledTo))
+	 // return false;
+	 if (Date.parse(from_date) < Date.parse(scheduledTo)) {
+	 alert("Scheduling Exist On That Range");
+	 resetFeilds($(
+	 "input[id=employeecheck" + i + "]")
+	 .parent().parent());
+	 $("input[id=scheduledto" + i + "]").focus();
+	 flag = false;
+	 break;
+	 }
+
+	 }
+	 if (Date.parse(from_date) > Date.parse(to_date)) {
+	 alert("Invalid Date Range!\nFrom Date cannot be after To Date!");
+	 $("input[id=from_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 }
+	 if (validateWithSubscriptionEffectiveDates() == false) {
+	 alert("Scheduling from date should be after subscription effective date");
+	 flag = false;
+	 break;
+	 } else if (Date.parse(cur_date) > Date.parse(from_date)) {
+	 alert("From date cannot be earlier than current date");
+	 $("input[id=from_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if (Date.parse(next_day) > Date.parse(from_date)
+	 && current_hour >= 18) {
+	 alert("Invalid Date Range!\n From date Should  be after Tomorrow after 6 PM");
+	 $("input[id=from_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if (Date.parse(from_date) > Date
+	 .parse(advFifteen_day)) {
+	 alert("Invalid date range.\n Scheduling can be done only 15 days in advance");
+	 $("input[id=from_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else if (Date.parse(to_date) > Date
+	 .parse(advThirt_day)) {
+	 alert("Invalid date range.\n Schedule can be done upto maximum 30 calender days");
+	 $("input[id=to_date" + i + "]").focus();
+	 flag = false;
+	 break;
+	 } else {
+	 flag = true;
+	 }
+	 }
+	 }
+	 }
+	 if (!checkboxflag) {
+	 alert("Please tick the Check box");
+	 }
+	 return flag;
+	 } catch (e) {
+	 alert("Eror" + e);
+	 return false;
+	 }
+	 }
+	 */
+</script>
+
+<link href="css/style.css" rel="stylesheet" type="text/css" />
+<link href="css/menu.css" rel="stylesheet" type="text/css" />
+<script>
+	$(document).ready(function() {
+
+		setActiveMenuItem();
+	});
+
+	function setActiveMenuItem() {
+		var url = window.location.pathname;
+		var filename = url.substring(url.lastIndexOf('/') + 1);
+		//  $("li[class=active']").removeAttr("active");
+
+		$("a[href='" + filename + "']").parent().attr("class", "active");
+		$("a[href='" + filename + "']").parent().parent().parent('li').attr(
+				"class", "active");
+
+	}
+
+	function openWinodw(url) {
+		window.open(url, 'Ratting',
+				'width=400,height=250,left=150,top=200,toolbar=1,status=1,');
+
+	}
+
+	function next() {
+		var site = document.getElementById("site").value;
+		var startPos = document.getElementById("startPos").value;
+		var endPos = document.getElementById("endPos").value;
+		var listSize = document.getElementById("listSize").value;
+		startPos = parseInt(startPos)
+				+ parseInt(document.getElementById("recordsize").value);
+		endPos = parseInt(startPos)
+				+ parseInt(document.getElementById("recordsize").value);
+
+		if (startPos > listSize) {
+			startPos = parseInt(startPos)
+					- parseInt(document.getElementById("recordsize").value);
+			endPos = parseInt(startPos)
+					+ parseInt(document.getElementById("recordsize").value);
+		} else {
+			if (endPos > listSize) {
+				endPos = listSize;
+			}
+			window.location = "transadmin_schedule_employee.jsp" + "?site="
+					+ site + "&startPos=" + startPos + "&endPos=" + endPos;
+		}
+
+	}
+	function pervious() {
+
+		var site = document.getElementById("site").value;
+		var startPos = document.getElementById("startPos").value;
+		var endPos = document.getElementById("endPos").value;
+		//var listSize = document.getElementById("listSize").value;
+		endPos = startPos;
+		startPos = parseInt(startPos)
+				- parseInt(document.getElementById("recordsize").value);
+
+		if (startPos < 0) {
+			startPos = 0;
+			endPos = parseInt(startPos)
+					+ parseInt(document.getElementById("recordsize").value);
+		} else {
+
+			window.location = "transadmin_schedule_employee.jsp?site=" + site
+					+ "&startPos=" + startPos + "&endPos=" + endPos;
+		}
+	}
+</script>
+
+<%
+	long empid = 0;
+	String employeeId = OtherFunctions.checkUser(session);
+	if (employeeId == null || employeeId.equals("null")) {
+		String param = request.getServletPath().substring(1) + "___"
+				+ request.getQueryString();
+		response.sendRedirect("index.jsp?page=" + param);
+	} else {
+		empid = Long.parseLong(employeeId);
+%>
+<jsp:include page="hrm_Header.jsp" />
+<%
+	}
+	OtherDao ob = null;
+	ob = OtherDao.getInstance();
+	SchedulingDao SchedulingDaoObj = new SchedulingDao();
+	ArrayList<SchedulingDto> schedulingEmpList;
+	ArrayList<LogTimeDto> loginTimeList = null;
+	ArrayList<LogTimeDto> logoutTimeList = null;
+	LogTimeDao logTimeDaoObj = new LogTimeDao();
+	String site = "";
+	site = request.getParameter("site");
+
+	/*starting special section for pagination middle */
+	final int RECORD_SIZE = 3;
+	String startPos = request.getParameter("startPos");
+	String endPos = request.getParameter("endPos");
+
+	if (startPos == null && endPos == null) {
+		startPos = "0";
+		endPos = "" + RECORD_SIZE;
+	}
+	schedulingEmpList = SchedulingDaoObj
+			.getAllSubscribedEmployeeDetails(site);
+	List<SchedulingDto> schedulingEmpListIterated = new PaginationService()
+			.getNext(schedulingEmpList, startPos, endPos);
+	loginTimeList = logTimeDaoObj.getAllGeneralLogtime("IN");
+	logoutTimeList = logTimeDaoObj.getAllGeneralLogtime("OUT");
+	int serialNo = 0;
+%>
+</head>
+<body>
+
+
+	<div id="body">
+		<div class="content">
+
+
+
+
+			<h3>Schedule Your Team</h3>
+
+			<hr />
+			<br />
+
+
+			<div>
+				<form name="siteSearchForm">
+					<table style="width: 20%; border: 0px none;">
+						<tr>
+							<td>Site</td>
+							<td>
+								<%
+									List<SiteDto> siteList = new SiteService().getSites();
+								%> <select name="site" id="site" onchange="return searchForm();">
+									<option value="">----ALL-----</option>
+									<%
+										for (SiteDto dto : siteList) {
+											String siteSelect = "";
+											if (dto.getId().equals(site)) {
+												siteSelect = "selected";
+											}
+									%>
+
+
+
+
+									<option <%=siteSelect%> value="<%=dto.getId()%>">
+										<%=dto.getName()%>
+									</option>
+
+
+									<%
+										}
+									%>
+							</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+
+			<br />
+			<hr />
+			<%
+				if (schedulingEmpList != null && schedulingEmpList.size() > 0) {
+			%>
+
+			<form name="schedule_emp" method="post" action="ScheduleEmployee"
+				onsubmit="return Validate1()">
+				<input type="hidden" name='source' value="transadmin" />
+
+				<table class="dataTable">
+					<tr>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td width="250"><input type="checkbox" id="checkAllProject" />
+						</td>
+						<td><input type="checkbox" id="checkAllFromDate" /></td>
+						<td><input style="margin-left: 4%;" type="checkbox"
+							id="checkAllToDate" /></td>
+						<td><input style="margin-left: 5%;" type="checkbox"
+							id="checkAllLoginTime" /></td>
+						<td><input style="margin-left: 8%;" type="checkbox"
+							id="checkAllLogoutTime" /></td>
+						<td></td>
+
+
+						<td colspan="12"></td>
+					</tr>
+					<thead>
+						<tr>
+							<td><input type="checkbox" id="checkAllEmployees" /></td>
+							<th>Emp ID</th>
+							<th>Name</th>
+							<th>Subscription Date</th>
+							<th>Effective Date</th>
+							<th width="250">Project</th>
+							<th>From Date</th>
+							<th>To Date</th>
+							<th>Login</th>
+							<th>Logout</th>
+							<th>Status</th>
+							<th>Scheduled Upto</th>
+							<th>Scheduled By</th>
+							<th>Updated on</th>
+
+						</tr>
+					</thead>
+					<%
+						for (SchedulingDto schdulingEmployeeDto : schedulingEmpListIterated) {
+								serialNo++;
+					%>
+					<tr id="<%=serialNo%>">
+						<td><input class="checkEmployee" size="1" type="checkbox"
+							id="employeecheck<%=serialNo%>" name="subscriptionId"
+							value="<%=schdulingEmployeeDto.getSubscriptionId()%>" /></td>
+						<td><%=schdulingEmployeeDto.getEmployeeId()%></td>
+
+						<td><%=schdulingEmployeeDto.getEmployeeName()%></td>
+						<td><%=OtherFunctions
+							.changeDateFromatToddmmyyyy(schdulingEmployeeDto
+									.getSubscriptionQuestDate())%></td>
+
+						<td class="td-EffectiveDate"><%=OtherFunctions
+							.changeDateFromatToddmmyyyy(schdulingEmployeeDto
+									.getSubscriptionDate())%> <input type="hidden"
+							id="subscriptionEffectiveDate-<%=serialNo%>"
+							value="<%=schdulingEmployeeDto.getSubscriptionDate()%>" /></td>
+
+
+						<td><input class="projectdesc" name="projectdesc"
+							id="projectdesc<%=serialNo%>" type="text" readonly
+							style="width: 75px" /> <input type="button" class="formbutton"
+							value="...." id="projectbtn<%=serialNo%>" width="6"
+							onclick="openWinodw('getproject.jsp?srno=<%=serialNo%>&projectSpecific=true' ); " />
+							<input type="hidden" class="project"
+							name="project<%=schdulingEmployeeDto.getSubscriptionId()%>"
+							id="project<%=serialNo%>" /> <img style="display: none;"
+							src="images/error.png" class="errorImage"
+							id="projectdesc<%=serialNo%>_img" /></td>
+						<td class="td-schedulingFromDate"><input readonly="readonly"
+							name="from_date<%=schdulingEmployeeDto.getSubscriptionId()%>"
+							id="from_date<%=serialNo%>" type="text" size="7"
+							class="fromDate {showOtherMonths: true, firstDay: 1, dateFormat: 'yyyy-mm-dd',
+                                        minDate: new Date(2008, 12 - 1, 25)} " />
+							<img style="display: none;" src="images/error.png"
+							class="errorImage" id="from_date<%=serialNo%>_img" /></td>
+
+						<td><input class="toDate" readonly="readonly"
+							name="to_date<%=schdulingEmployeeDto.getSubscriptionId()%>"
+							id="to_date<%=serialNo%>" type="text" size="7"
+							class="{showOtherMonths: true, firstDay: 1, dateFormat: 'dd/mm/yyyy',
+                                        minDate: new Date(2008, 12 - 1, 25)}" />
+							<img style="display: none;" src="images/error.png"
+							class="errorImage" id="to_date<%=serialNo%>_img" /></td>
+						<td><select class="loginTime"
+							name="logintime<%=schdulingEmployeeDto.getSubscriptionId()%>"
+							id="logintime<%=serialNo%>">
+
+								<option id="clearLoginTime" value="">Select</option>
+								<option id="none" value="none">None</option>
+								<%
+									for (LogTimeDto logTimeDto : loginTimeList) {
+								%>
+								<option value="<%=logTimeDto.getLogTime()%>"><%=logTimeDto.getLogTime()%></option>
+								<%
+									}
+								%>
+						</select> <img style="display: none;" src="images/error.png"
+							class="errorImage" id="logintime<%=serialNo%>_img" /></td>
+						<td><select class="logoutTime"
+							name="logouttime<%=schdulingEmployeeDto.getSubscriptionId()%>"
+							id="logouttime<%=serialNo%>">
+
+								<option id="clearLogoutTime" value="">Select</option>
+								<option id="none" value="none">None</option>
+								<%
+									for (LogTimeDto logTimeDto : logoutTimeList) {
+								%>
+								<option value="<%=logTimeDto.getLogTime()%>"><%=logTimeDto.getLogTime()%></option>
+								<%
+									}
+								%>
+						</select> <img style="display: none;" src="images/error.png"
+							class="errorImage" id="logouttime<%=serialNo%>_img" /></td>
+						<td><input type="hidden" class="scheduledTo"
+							id="scheduledTo<%=serialNo%>"
+							value="<%=schdulingEmployeeDto.getSchedulingToDate()%>" /> <input
+							type="hidden" class="scheduledFrom"
+							id="scheduledFrom<%=serialNo%>"
+							value="<%=schdulingEmployeeDto.getSchedulingFromDate()%>" /> <%
+ 	//	System.out.println("scheduled to"+schdulingEmployeeDto.getSchedulingToDate());
+
+ 			if (!(("" + schdulingEmployeeDto.getSchedulingToDate())
+ 					.equals("null"))) {
+ 				out.print("Active</td><td>"
+ 						+ OtherFunctions
+ 								.changeDateFromatToddmmyyyy(schdulingEmployeeDto
+ 										.getSchedulingToDate()));
+ 			}
+
+ 			else {
+ 				out.print("Not Scheduled</td><td>&nbsp;");
+ 			}
+ %></td>
+						<td><%=schdulingEmployeeDto.getScheduledBy()%></td>
+						<td><%=schdulingEmployeeDto.getStatusDate()%></td>
+					</tr>
+					<%
+						}
+					%>
+
+
+					<tr>
+						<td colspan="11">&nbsp;</td>
+					</tr>
+					<tr>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+
+						<td colspan="5" align="center"><input type="submit"
+							class="formbutton" name="submit" value="Book" style="width: 70px" />&nbsp;
+							<input type="button" class="formbutton" value="Back"
+							onclick="javascript:history.go(-1);" /> <input type="hidden"
+							id="employeeCount" name="employeeCount" value="<%=serialNo%>" />
+						</td>
+					</tr>
+					<tr>
+						<td colspan="11"></td>
+					</tr>
+				</table>
+			</form>
+			<table style="width: 40%">
+				<tr>
+					<td><a href="#" onclick="pervious()">Pervious</a></td>
+
+					<td id="pageInfo"><%=Integer.parseInt(startPos) + 1%> to <%=endPos%>
+						of</td>
+					<td><%=schedulingEmpList.size()%> is showing</td>
+					<td><a href="#" onclick="next()">Next</a></td>
+				</tr>
+				<tr>
+					<td colspan="4"><input type="hidden" value="<%=RECORD_SIZE%>"
+						id="recordsize" /> <input type="hidden" value="<%=endPos%>"
+						id="endPos" /> <input type="hidden" value="<%=startPos%>"
+						id="startPos" /> <input type="hidden"
+						value="<%=schedulingEmpList.size()%>" id="listSize" /></td>
+				</tr>
+			</table>
+
+			<%
+				} else {
+			%>
+			<p style="height: 400px" class="status">NO Scheduling is pending
+				for Employees</p>
+
+			<%
+				}
+			%>
+			<%@include file="Footer.jsp"%>
+		</div>
+	</div>
+
+</body>
+</html>

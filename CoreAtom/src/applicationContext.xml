@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:context="http://www.springframework.org/schema/context"
+ xmlns:p="http://www.springframework.org/schema/p"
+ xmlns:mvc="http://www.springframework.org/schema/mvc"
+ xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+ xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-3.0.xsd
+   http://www.springframework.org/schema/mvc
+   http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+       http://www.springframework.org/schema/jdbc
+       http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd">          
+ <!--  How to include more then one base package -->
+ 
+
+
+<bean id="springDataSourceFordemo" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://localhost:3306/atomcoredemo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate" >
+ 	<constructor-arg>
+ 	<ref local="springDataSourceForCD"/>
+ 	</constructor-arg>
+</bean>	
+
+ <context:annotation-config />
+ <context:component-scan base-package="com.agiledge.atom.spring.controller,com.agiledge.atom.spring.dao" />
+ <mvc:annotation-driven />
+
+ 
+ <!-- Below configuration has been added to enable in memory DB HSQLDB  --> 
+ <bean id="springDataSourceForCD" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://localhost:3306/atomcorecdo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+ <bean id="springDataSourceForgss" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://localhost:3306/atomcoredemo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+<bean id="springDataSourceForCD1" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://10.20.14.4:3306/atomcorecdo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+ <bean id="springDataSourceForgss1" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://10.20.14.4:3306/atomcoredemo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+ <bean id="springDataSourceForamat" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" >
+   <property name="url" value="jdbc:mysql://localhost:3306/atomcorecdo" />
+   <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+   <property name="username" value="root" />
+   <property name="password" value="Atom@dbserver159$$" />   
+   <property name="initialSize" value="10" />
+   <property name="maxActive" value="10" />
+</bean>
+ 	
+ <bean id="DayreportBeancd" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceForCD"/>
+ </bean>
+ <bean id="DayreportBeangss" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceForgss"/>
+ </bean>
+ <bean id="DayreportBeanamat" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceForamat"/>
+ </bean>
+ <bean id="DayreportBeandemo" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceFordemo"/>
+ </bean>
+ <bean id="DayreportBeancd1" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceForCD1"/>
+ </bean>
+ <bean id="DayreportBeangss1" class="com.agiledge.atom.spring.dao.DayReportDao">
+    <property name="dataSource" ref="springDataSourceForgss1"/>
+ </bean>
+</beans>

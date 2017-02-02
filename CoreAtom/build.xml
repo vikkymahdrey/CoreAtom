@@ -1,0 +1,186 @@
+<project name="Agiledge" default="compile" basedir=".">
+
+
+	<property name="app.name" value="atomcore" />
+	<property name="app.path" value="${basedir}/${app.name}" />
+	<property name="app.version" value="0.1-dev" />
+	<property name="build.home" value="${basedir}/build" />
+	<property name="catalina.home"
+		value="C:\Software\apache-tomcat-7\apache-tomcat-7.0.32" />
+
+	<property name="docs.home" value="${basedir}/docs" />
+	<property name="src.home" value="${basedir}/src" />
+	<property name="lib.home" value="${basedir}/lib" />
+	<property name="proguard.home" value="D:\software\proguard4.5.1\proguard4.5.1" />
+	<property name="dist.home" value="${basedir}/dist" />
+
+	<property name="compile.debug" value="true" />
+	<property name="compile.deprecation" value="false" />
+	<property name="compile.optimize" value="true" />
+
+	<path id="compile.classpath">
+		<fileset dir="${lib.home}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<target name="all" depends="clean,compile"
+		description="Clean build and dist directories, then compile" />
+
+	<target name="clean" description="Delete old build and dist directories">
+		<delete dir="${build.home}" />
+		<delete dir="${dist.home}" />
+		<delete dir="${docs.home}" />
+	</target>
+
+	<target name="init" description="create build and dist directories">
+		<delete dir="${build.home}" />
+		<delete dir="${dist.home}" />
+		<delete dir="${docs.home}" />
+	</target>
+
+	<target name="compile" depends="prepare" description="Compile Java sources">
+
+		<!-- Compile Java classes as necessary -->
+		<mkdir dir="${build.home}" />
+		<javac srcdir="${src.home}" destdir="${build.home}" debug="${compile.debug}"
+			deprecation="${compile.deprecation}" optimize="${compile.optimize}">
+			<classpath refid="compile.classpath" />
+		</javac>
+
+	</target>
+
+	<target name="dist" depends="compile,javadoc" description="Create binary distribution">
+
+		<!-- Copy documentation subdirectories -->
+
+		<mkdir dir="${dist.home}/docs" />
+		<copy todir="${dist.home}/docs">
+			<fileset dir="${docs.home}" />
+		</copy>
+
+		<!-- Create application JAR file -->
+		<jar jarfile="${dist.home}/${app.name}.jar" basedir="${build.home}" />
+
+		<copy file="${dist.home}/${app.name}.jar" todir="${lib.home}"
+			overwrite="true" />
+
+		<!-- Create application WAR File -->
+		<war destfile="${dist.home}/${app.name}.war" webxml="${basedir}/WebContent/WEB-INF/web.xml"
+			basedir="${basedir}/WebContent" excludes="${lib.home}}/servlet-api.jar">
+			<lib dir="${lib.home}" />
+		</war>
+
+
+
+		<!-- Copy additional files to ${dist.home} as necessary -->
+
+	</target>
+
+	<target name="deploy" description="Deploy the war file">
+		<delete dir="${catalina.home}\webapps\${app.name}" />
+		<delete file="${catalina.home}\webapps\${app.name}.war" />
+		<copy file="${dist.home}/${app.name}.war" todir="${catalina.home}/webapps"
+			overwrite="true" />
+	</target>
+
+	<target name="install" depends="compile"
+		description="Install application to servlet container">
+
+		<deploy url="${manager.url}" username="${manager.username}"
+			password="${manager.password}" path="${app.path}" localWar="file://${build.home}" />
+
+	</target>
+
+	<target name="javadoc" depends="compile"
+		description="Create Javadoc API documentation">
+
+		<mkdir dir="${dist.home}/docs/api" />
+		<javadoc sourcepath="${src.home}" destdir="${dist.home}/docs/api"
+			packagenames="*">
+			<classpath refid="compile.classpath" />
+		</javadoc>
+
+	</target>
+
+	<target name="list" description="List installed applications on servlet container">
+
+		<list url="${manager.url}" username="${manager.username}"
+			password="${manager.password}" />
+
+	</target>
+
+	<target name="prepare">
+
+		<!-- Create build directories as needed -->
+		<mkdir dir="${build.home}" />
+		<mkdir dir="${dist.home}" />
+		<mkdir dir="${docs.home}" />
+
+
+		<!-- <copy todir="${build.home}/WEB-INF/lib" file="${foo.jar}"/> -->
+
+		<!-- Copy static files from external dependencies as needed -->
+		<!-- *** CUSTOMIZE HERE AS REQUIRED BY YOUR APPLICATION *** -->
+
+	</target>
+
+	<target name="obfuscate" depends="dist">
+		<taskdef resource="proguard/ant/task.properties" classpath="${proguard.home}\lib\proguard.jar" />
+
+
+		<proguard overloadaggressively="on" defaultpackage=""
+			allowaccessmodification="on" printseeds="on" usemixedcaseclassnames="false">
+			<!-- On Windows, you can't use mixed case class names, for the sake of 
+				the preverify tool. usemixedcaseclassnames="false"> -->
+
+
+			<injar file="${dist.home}/${app.name}.jar" />
+
+
+
+			<libraryjar file="${java.home}/lib/rt.jar" />
+			<!--libraryjar file="${java.home}/lib/jce.jar" / -->
+			<!-- libraryjar file="junit.jar" / -->
+			<libraryjar file="${lib.home}/sapjco3.jar" />
+			<libraryjar file="${lib.home}/sapjco.jar" />
+
+			<keepattribute name="InnerClasses" />
+			<keepattribute name="SourceFile" />
+			<keepattribute name="LineNumberTable" />
+			<keepattribute name="Deprecated" />
+			<keepattribute name="*Annotation*" />
+
+			<outjar file="${dist.home}/${app.name}_Obfuscate.jar" />
+
+
+
+			<!-- Your application may contain more items that need to be preserved; 
+				typically classes that are dynamically created using Class.forName -->
+
+			<keep access="public">
+				<field access="public protected" />
+				<method access="public protected" />
+			</keep>
+
+			<keepclassmembers implements="java.io.Serializable">
+				<field access="final" type="long" name="serialVersionUID" />
+				<field access="static final" type="java.io.ObjectStreamField[]"
+					name="serialPersistentFields" />
+				<method access="private" type="void" name="writeObject"
+					parameters="java.io.ObjectOutputStream" />
+				<method access="private" type="void" name="readObject"
+					parameters="java.io.ObjectInputStream" />
+				<method type="java.lang.Object" name="writeReplace"
+					parameters="" />
+				<method type="java.lang.Object" name="readResolve"
+					parameters="" />
+			</keepclassmembers>
+
+
+
+		</proguard>
+	</target>
+
+
+</project>

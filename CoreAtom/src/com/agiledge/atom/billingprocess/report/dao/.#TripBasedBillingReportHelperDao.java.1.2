@@ -1,0 +1,322 @@
+package billingprocess.report.dao;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import trip.dto.TripDetailsConstant;
+
+import DBconnect.DbConnect;
+import DTO.TripDetailsDto;
+import billingprocess.report.dto.TripBasedBillingReportHelperDto;
+
+import commons.OtherFunctions;
+
+public class TripBasedBillingReportHelperDao {
+
+	
+	public ArrayList<TripBasedBillingReportHelperDto> getTripBasedBillingTripCostReport_monthly(String site, String vendorId, String vehicleType, String fromDate, String toDate, String month , String year ) {
+		
+
+	 	//vendorId="1";
+
+		DbConnect dbConn = DbConnect.getInstance();
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		
+		fromDate=OtherFunctions.changeDateFromatToIso(fromDate);
+		toDate = OtherFunctions.changeDateFromatToIso(toDate);
+		vehicleType=vehicleType==null?"":vehicleType;
+		vendorId=vendorId==null?"":vendorId;					
+		fromDate=fromDate==null?"":fromDate;
+		toDate=toDate==null?"":toDate;
+	//	option=option==null?"":option;
+		site=site==null?"":site;
+		ArrayList<TripBasedBillingReportHelperDto> dtoList = new ArrayList<TripBasedBillingReportHelperDto>();
+		
+			
+		try {
+			if(!site.equals("")&&!vendorId.equals("")) {
+			 
+			String vehicleQuery="";
+			if(vehicleType.equals("")==false&&vehicleType.trim().equalsIgnoreCase("all")==false) {
+				vehicleQuery= "  and td.vehicle_type="+ vehicleType;
+			}
+			String dateQuery = "";
+			if( !fromDate.equals("") ) {
+				dateQuery = " and td.trip_date >= '" + OtherFunctions.changeDateFromatToIso(fromDate)+"'";
+			}
+			if( !toDate.equals("") ) {
+				dateQuery = dateQuery +  " and td.trip_date <= '" +
+						 OtherFunctions.changeDateFromatToIso(toDate)+"'";
+			}
+		
+			String yearQuery = "";
+			if(!OtherFunctions.isEmpty( year)) {
+				yearQuery = " and datepart(year,td.trip_date)=" + year;
+			}
+			String monthQuery = "";
+			if(!OtherFunctions.isEmpty( month)) {
+				monthQuery = " and datename(month,td.trip_date)='" + month + "' ";
+			}
+		 
+	
+		 
+		 
+			String query1 = "select   datename(year,td.trip_date) tripYear, datename(month,td.trip_date) tripMonth, td.vehicleTypeName, dc.fromKm, dc.toKm, count(*) totTrips, sum(targ.tripTripRate) tripTripRate, concat(dc.fromKm,'-',dc.toKm ) distanceRange, sum(targ.tripEscortRate) tripEscortRate from  td_billing_args targ join   " +
+					"(select isnull(vtp.approvalStatus,'Open') approvalStatus, tva.vendorId, td.*, vt.type vehicleTypeName from trip_details td join vehicle_type vt on td.vehicle_type=vt.id join tripvendorassign tva on td.id= tva.tripid  left join vendor_trip_sheet_parent vtp on td.id = vtp.tripId where approvalStatus = 'Approved by Transport Manager' )   td " +
+					"on targ.tripId = td.id  left join  	(select tbc.id, tbc.ac_constraint, tbc.distance_constraint, tbc.trip_rate from trip_based_config tbc ) tbc on tbc.id= targ.tripTripBillingId  left join  (  select tbc.status, tbc.id, tbc.ac_constraint,  tbcd.fromKm, tbcd.toKm, isnull( tbcd.rate, tbc.trip_rate) tripRate from trip_based_config tbc left join billing_config_distance_constraint tbcd on tbcd.bc_refId=tbc.id where tbc.status= 'a'  ) dc on targ.tripTripBillingId=dc.id and td.distance between dc.fromKm and dc.toKm    "+ 
+							" where td.siteId="+site+" and td.vendorId="+ vendorId + vehicleQuery + dateQuery+ yearQuery + monthQuery +
+							" group by datename(year,td.trip_date), datename(month,td.trip_date) , td.vehicleTypeName, dc.fromKm, dc.toKm , concat(dc.fromKm,'-',dc.toKm )    ";
+			con = dbConn.connectDB();
+			stmt = con.createStatement();
+			System.out.println(query1);
+		 
+			 				rs = stmt.executeQuery(query1);
+
+			while (rs.next()) {
+				TripBasedBillingReportHelperDto dto = new TripBasedBillingReportHelperDto();
+				dto.setMonthName(rs.getString("tripMonth"));
+				dto.setYear(rs.getString("tripYear"));
+				dto.setVehicleType(rs.getString("vehicleTypeName"));
+				dto.setYear(rs.getString("tripYear"));
+				dto.setEscortRate(rs.getDouble("tripEscortRate")); 
+				dto.setFromKm(""+rs.getString("fromKm"));
+				dto.setToKm(""+rs.getString("toKm"));
+				dto.setDistanceRange(rs.getString("distanceRange"));
+				dto.setTrips(getTripBasedBillingTripCostReport_tripWise(site, vendorId, dto.getVehicleType(), fromDate, toDate, dto.getMonthName(), dto.getYear(), dto.getFromKm(), dto.getToKm()));
+				 
+				dto.setTotalTrips(rs.getInt("totTrips"));
+				dto.setRate(rs.getDouble("tripTripRate"));
+				
+			 	 	 dtoList.add(dto);
+			}
+			return dtoList;
+			}else  {
+				System.out.println("validation error : ");
+			}
+
+		} catch (Exception e) {
+			System.out.println("Error in getbyVehicleTypeReport "+ e);
+		} finally {
+			DbConnect.closeResultSet(rs);
+			DbConnect.closeStatement(stmt);
+			DbConnect.closeConnection(con);
+		}
+
+		return null;		
+
+		
+	}
+	
+	public ArrayList<TripBasedBillingReportHelperDto> getTripBasedBillingTripCostReport_daily(String site, String vendorId, String vehicleType, String fromDate, String toDate, String month, String year) {
+		
+
+	 	//vendorId="1";
+
+		DbConnect dbConn = DbConnect.getInstance();
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		
+		fromDate=OtherFunctions.changeDateFromatToIso(fromDate);
+		toDate = OtherFunctions.changeDateFromatToIso(toDate);
+		vehicleType=vehicleType==null?"":vehicleType;
+		vendorId=vendorId==null?"":vendorId;					
+		fromDate=fromDate==null?"":fromDate;
+		toDate=toDate==null?"":toDate;
+	//	option=option==null?"":option;
+		site=site==null?"":site;
+		ArrayList<TripBasedBillingReportHelperDto> dtoList = new ArrayList<TripBasedBillingReportHelperDto>();
+		
+			
+		try {
+			if(!site.equals("")&&!vendorId.equals("")) {
+			 
+			String vehicleQuery="";
+			if(vehicleType.equals("")==false&&vehicleType.trim().equalsIgnoreCase("all")==false) {
+				vehicleQuery= "  and td.vehicle_type="+ vehicleType;
+			}
+			String dateQuery = "";
+			if( !fromDate.equals("") ) {
+				dateQuery = " and td.trip_date >= '" + OtherFunctions.changeDateFromatToIso(fromDate)+"'";
+			}
+			if( !toDate.equals("") ) {
+				dateQuery = dateQuery +  " and td.trip_date <= '" +
+						 OtherFunctions.changeDateFromatToIso(toDate)+"'";
+			}
+			String yearQuery = "";
+			if(!OtherFunctions.isEmpty( year)) {
+				yearQuery = " and datepart(year,td.trip_date)=" + year;
+			}
+			String monthQuery = "";
+			if(!OtherFunctions.isEmpty( month)) {
+				monthQuery = " and datename(month,td.trip_date)='" + month + "' ";
+			}
+		 
+		
+			String query1 = "select   td.trip_date, td.vehicleTypeName, dc.fromKm, dc.toKm, count(*) totTrips, sum(targ.tripTripRate) tripTripRate, sum(targ.tripEscortRate )  tripEscortRate, concat(dc.fromKm,'-',dc.toKm ) distanceRange   from  td_billing_args targ join  " +
+					" (select isnull(vtp.approvalStatus,'Open') approvalStatus, tva.vendorId, td.*, vt.type vehicleTypeName from trip_details td join vehicle_type vt on td.vehicle_type=vt.id join tripvendorassign tva on td.id= tva.tripid  left join vendor_trip_sheet_parent vtp on td.id = vtp.tripId where approvalStatus = 'Approved by Transport Manager' ) " +
+					" td on targ.tripId = td.id  left join  	(select tbc.id, tbc.ac_constraint, tbc.distance_constraint, tbc.trip_rate from trip_based_config tbc ) tbc on tbc.id= targ.tripTripBillingId  left join  (  select tbc.status, tbc.id, tbc.ac_constraint,  tbcd.fromKm, tbcd.toKm, isnull( tbcd.rate, tbc.trip_rate) tripRate from trip_based_config tbc left join billing_config_distance_constraint tbcd on tbcd.bc_refId=tbc.id where tbc.status= 'a'  ) dc on targ.tripTripBillingId=dc.id and td.distance between dc.fromKm and dc.toKm   "+ 
+							" where td.siteId="+site+" and td.vendorId="+ vendorId + vehicleQuery + dateQuery+ yearQuery + monthQuery +
+							" group by td.trip_date, td.vehicleTypeName, dc.fromKm, dc.toKm,  concat(dc.fromKm,'-',dc.toKm ) ";
+			System.out.println("DAIDLY QURY : " +query1);
+			con = dbConn.connectDB();
+			stmt = con.createStatement();
+		 	 				rs = stmt.executeQuery(query1);
+
+			while (rs.next()) {
+				TripBasedBillingReportHelperDto dto = new TripBasedBillingReportHelperDto();
+				dto.setDate(rs.getDate("trip_date"));
+				dto.setEscortRate(rs.getDouble("tripEscortRate"));
+				dto.setVehicleType(rs.getString("vehicleTypeName"));
+				 
+				dto.setFromKm(""+rs.getString("fromKm"));
+				dto.setToKm(""+rs.getString("toKm"));
+				 dto.setDistanceRange(rs.getString("distanceRange"));
+				dto.setTotalTrips(rs.getInt("totTrips"));
+				dto.setRate(rs.getDouble("tripTripRate"));
+				dto.setTrips(getTripBasedBillingTripCostReport_tripWise(site, vendorId, dto.getVehicleType(), OtherFunctions.changeDateFromatToIso( dto.getDate()),OtherFunctions.changeDateFromatToIso( dto.getDate()), dto.getMonthName(), dto.getYear(), dto.getFromKm(), dto.getToKm()));
+				
+			 	 	 dtoList.add(dto);
+			}
+			return dtoList;
+			}else  {
+				System.out.println("validation error : ");
+			}
+
+		} catch (Exception e) {
+			System.out.println("Error in getbyVehicleTypeReport "+ e);
+		} finally {
+			DbConnect.closeResultSet(rs);
+			DbConnect.closeStatement(stmt);
+			DbConnect.closeConnection(con);
+		}
+
+		return null;		
+
+		
+	}
+	
+	
+	
+public ArrayList<TripDetailsDto> getTripBasedBillingTripCostReport_tripWise(String site, String vendorId, String vehicleType, String fromDate, String toDate, String month, String year, String fromKm, String toKm) {
+		
+
+	 	//vendorId="1";
+
+		DbConnect dbConn = DbConnect.getInstance();
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		
+		fromDate=OtherFunctions.changeDateFromatToIso(fromDate);
+		toDate = OtherFunctions.changeDateFromatToIso(toDate);
+		vehicleType=vehicleType==null?"":vehicleType;
+		vendorId=vendorId==null?"":vendorId;					
+		fromDate=fromDate==null?"":fromDate;
+		toDate=toDate==null?"":toDate;
+	//	option=option==null?"":option;
+		site=site==null?"":site;
+		ArrayList<TripDetailsDto> dtoList = new ArrayList<TripDetailsDto>();
+		
+			
+		try {
+			if(!site.equals("")&&!vendorId.equals("")) {
+			 
+			String vehicleQuery="";
+			if(vehicleType.equals("")==false&&vehicleType.trim().equalsIgnoreCase("all")==false) {
+				vehicleQuery= "  and td.vehicleTypeName='"+ vehicleType + "' ";
+			}
+			String dateQuery = "";
+			if( !fromDate.equals("") ) {
+				dateQuery = " and td.trip_date >= '" + OtherFunctions.changeDateFromatToIso(fromDate)+"'";
+			}
+			if( !toDate.equals("") ) {
+				dateQuery = dateQuery +  " and td.trip_date <= '" +
+						 OtherFunctions.changeDateFromatToIso(toDate)+"'";
+			}
+			String yearQuery = "";
+			if(!OtherFunctions.isEmpty( year)) {
+				yearQuery = " and datepart(year,td.trip_date)=" + year;
+			}
+			String monthQuery = "";
+			if(!OtherFunctions.isEmpty( month)) {
+				monthQuery = " and datename(month,td.trip_date)='" + month + "' ";
+			}
+			String fromKmQuery = "";
+			if(!OtherFunctions.isEmpty( fromKm)) {
+				fromKmQuery = " and dc.fromKm='" + fromKm + "' ";
+			}
+			String toKmQuery = "";
+			if(!OtherFunctions.isEmpty( toKm)) {
+				fromKmQuery = " and dc.toKm='" + toKm + "' ";
+			}
+		 
+		
+			String query1 = " select td.trip_code, td.trip_date, td.vehicleTypeName, td.trip_time, td.trip_log, td.security_status, targ.tripId, targ.tripTripBillingId, targ.tripTripRate, tbc.ac_constraint, tbc.distance_constraint, targ.tripEscortRate,  dc.fromKm, dc.toKm, isnull(dc.tripRate, tbc.trip_rate) tripRate, td.distance,  concat(dc.fromKm,'-', dc.toKm ) distanceRange, targ.tripEscortRate  from  td_billing_args targ join  " +
+					"( select isnull(vtp.approvalStatus,'Open') approvalStatus, tva.vendorId, td.*, vt.type vehicleTypeName from trip_details td join vehicle_type vt on td.vehicle_type=vt.id join tripvendorassign tva on td.id= tva.tripid  left join vendor_trip_sheet_parent vtp on td.id = vtp.tripId where approvalStatus = 'Approved by Transport Manager'  )    td " +
+					" on targ.tripId = td.id left join  (select tbc.id, tbc.ac_constraint, tbc.distance_constraint, tbc.trip_rate from trip_based_config tbc ) tbc on tbc.id= targ.tripTripBillingId left join ( select tbc.status, tbc.id, tbc.ac_constraint,  tbcd.fromKm, tbcd.toKm, isnull( tbcd.rate, tbc.trip_rate) tripRate from trip_based_config tbc left join billing_config_distance_constraint tbcd on tbcd.bc_refId=tbc.id where tbc.status= 'a' ) dc on targ.tripTripBillingId=dc.id and td.distance between dc.fromKm and dc.toKm "+ 
+							" where td.siteId="+site+" and td.vendorId="+ vendorId + vehicleQuery + dateQuery+ yearQuery + monthQuery + fromKmQuery + toKmQuery;
+						 
+			System.out.println("DAIDLY QURY : " +query1);
+			con = dbConn.connectDB();
+			stmt = con.createStatement();
+			
+			/*if(option.equals("Time slot"))
+			{
+				query=timeSlotQuery;
+				optionTitle="Time Slot";
+			} else if(option.equals("Time of the day"))
+			{
+				query=timeOfTheDayQuery;
+				optionTitle="Time Of The Day";
+			} else if(option.equals("Distance grid"))
+			{
+				query=distanceGridQuery;
+				optionTitle="Distance Grid";
+			} else {
+				query=optionlessQuery;
+			}*/
+		 
+			 				rs = stmt.executeQuery(query1);
+
+			while (rs.next()) {
+				TripDetailsDto dto = new TripDetailsDto();
+				dto.setTrip_code(rs.getString("trip_code"));
+				dto.setTripDate(rs.getDate("trip_date"));
+				dto.setTrip_time(rs.getString("trip_time"));
+				dto.setTrip_log(rs.getString("trip_log"));
+				dto.setEscortRate(rs.getDouble("tripEscortRate"));
+				dto.setVehicle_type(rs.getString("vehicleTypeName"));
+				 
+				 
+				dto.setFromKm(""+rs.getString("fromKm"));
+				dto.setToKm(""+rs.getString("toKm"));
+				 dto.setDistanceRange(rs.getString("distanceRange")); 
+				dto.setTripRate (rs.getDouble("tripTripRate"));
+				
+			 	 	 dtoList.add(dto);
+			}
+			return dtoList;
+			}else  {
+				System.out.println("validation error : ");
+			}
+
+		} catch (Exception e) {
+			System.out.println("Error in getbyVehicleTypeReport "+ e);
+		} finally {
+			DbConnect.closeResultSet(rs);
+			DbConnect.closeStatement(stmt);
+			DbConnect.closeConnection(con);
+		}
+
+		return null;		
+
+		
+	}
+
+
+}
