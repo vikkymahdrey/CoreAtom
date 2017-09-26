@@ -47,8 +47,8 @@ import com.agiledge.atom.usermanagement.dto.ViewManagementDto;
 public class OtherFunctions {
 public static String encryptTheMapKey(String urlString)
 {
-	String keyString="xghu9DIoNr63z8_al_oJCSPWQh0=";
-	String client="gme-leptonsoftwareexport4";
+	String keyString="API_KEY";
+	String client="AIzaSyB5VBCKJW8niA-qH66rABzhEYvI5WHsP-I";
 		
 	  byte[] key=null;
 	  URL url =null;
